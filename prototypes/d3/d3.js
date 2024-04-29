@@ -35,7 +35,6 @@ session
       properties: relationship.properties,
       type: relationship.type,
     }));
-    console.log(links);
     draw();
   })
   .catch((error) => {
