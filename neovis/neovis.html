@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Neovis.js Simple Example</title>
+    <style type="text/css">
+      html,
+      body {
+        font: 16pt arial;
+      }
+
+      #viz {
+        width: 900px;
+        height: 700px;
+        border: 1px solid lightgray;
+        font: 22pt arial;
+      }
+    </style>
+
+    <!-- FIXME: load from dist -->
+    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+    <script src="https://unpkg.com/neo4j-driver@5.19.0/lib/browser/neo4j-web.js"></script>
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.min.js"
+      integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+      crossorigin="anonymous"></script>
+
+    <script type="text/javascript">
+      // define config car
+      // instantiate nodevis object
+      // draw
+
+      var viz;
+
+      function draw() {
+        var config = {
+          containerId: "viz",
+          neo4j: {
+            serverUrl: "neo4j://375f5cae.databases.neo4j.io",
+            serverUser: "neo4j",
+            serverPassword: "H65pgY82QWVEOeVZE9oEevsZ-QwCU1_Vhh-4R8EqROY",
+            driverConfig: {
+              encrypted: "ENCRYPTION_ON",
+              trust: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
+            },
+          },
+          labels: {
+            Actor: {
+              label: "name",
+              [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+                static: {
+                  color: "#99E83A",
+                },
+                cypher: {
+                  value:
+                    "MATCH (n)-[r:ACTED_IN]->() WHERE id(n) = $id RETURN COUNT(r)",
+                },
+              },
+            },
+            Movie: {
+              label: "title",
+            },
+          },
+          relationships: {
+            ACTED_IN: {
+              [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+                static: {
+                  color: "#000000",
+                  opacity: 0.9,
+                },
+              },
+            },
+          },
+          visConfig: {
+            nodes: {
+              font: { size: 22, face: "Tahoma", strokeWidth: 3, vadjust: -12 },
+              labelHighlightBold: true,
+              shadow: { enabled: true, size: 15 },
+              shape: "dot",
+              opacity: 0.9,
+              widthConstraint: { maximum: 160 },
+            },
+            edges: {
+              arrows: { to: { enabled: true } },
+              arrowStrikethrough: false,
+              chosen: true,
+            },
+            layout: { improvedLayout: true },
+            physics: {
+              stabilization: { enabled: true, fit: true },
+              solver: "forceAtlas2Based",
+              forceAtlas2Based: {
+                theta: 0.5,
+                gravitationalConstant: -150,
+                centralGravity: 0.015,
+                springConstant: 0.08,
+                springLength: 100,
+                damping: 0.5,
+                avoidOverlap: 0.8,
+              },
+            },
+          },
+          initialCypher: "MATCH p=()-[:ACTED_IN]->() RETURN p LIMIT 25;",
+        };
+
+        viz = new NeoVis.default(config);
+        viz.render();
+
+        viz.registerOnEvent("completed", (e) => {
+          viz.network.on("selectNode", (event) => {
+            const neo4jUsername = "neo4j";
+            const neo4jPassword = "H65pgY82QWVEOeVZE9oEevsZ-QwCU1_Vhh-4R8EqROY";
+            var driver = neo4j.driver(
+              "neo4j://375f5cae.databases.neo4j.io",
+              neo4j.auth.basic(neo4jUsername, neo4jPassword),
+              {
+                encrypted: "ENCRYPTION_ON",
+                trustedCertificates: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
+              }
+            );
+            var nodeId = event.nodes[0];
+            let query =
+              " MATCH p1=(n)-[r]->(m) WHERE id(n) = " + nodeId + " RETURN p1";
+            // viz.renderWithCypher(init);
+            console.log(event.nodes[0]);
+
+            var session = driver.session({
+              defaultAccessMode: neo4j.session.READ,
+            });
+            function buildNode(neonode) {
+              const node = {};
+              const label = neonode.labels[0];
+              node.id = parseInt(neonode.identity);
+              console.log(neonode);
+              node.raw = neonode;
+              node.group = label;
+              return node;
+            }
+            function buildEdge(neoedge) {
+              const edge = {};
+              const label = neoedge.labels[0];
+              edge.id = parseInt(neoedge.identity);
+              console.log(neoedge);
+              edge.raw = neoedge;
+              edge.group = label;
+              return edge;
+            }
+            session
+              .run(query)
+              .then((result) => {
+                result.records.forEach((record) => {
+                  p = record.get("p1");
+                  viz.nodes.update(buildNode(p.end));
+                  viz.nodes.update(buildEdge(p.relationships));
+                });
+              })
+              .catch((error) => {
+                console.log(error);
+              })
+              .then(() => {
+                session.close();
+                driver.close();
+              });
+          });
+        });
+      }
+    </script>
+  </head>
+  <body onload="draw()">
+    <div id="viz"></div>
+
+    Cypher query: <textarea rows="4" cols="50" id="cypher"></textarea><br />
+    <input type="submit" value="Submit" id="reload" />
+    <input type="submit" value="Stabilize" id="stabilize" />
+  </body>
+
+  <script>
+    $("#reload").click(function () {
+      var cypher = $("#cypher").val();
+
+      if (cypher.length > 3) {
+        viz.renderWithCypher(cypher);
+      } else {
+        console.log("reload");
+        viz.reload();
+      }
+    });
+
+    $("#stabilize").click(function () {
+      viz.stabilize();
+    });
+  </script>
+</html>

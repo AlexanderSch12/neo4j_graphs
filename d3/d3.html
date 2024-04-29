@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Neo4j D3 Canvas Visualization</title>
+    <!--  The latest version of D3.js  -->
+    <!-- <script src="https://d3js.org/d3.v7.min.js"></script> -->
+    <script src="https://d3js.org/d3.v7.js"></script>
+    <script src="https://unpkg.com/neo4j-driver@5.19.0/lib/browser/neo4j-web.js"></script>
+    <!-- Our D3.js code -->
+    <script type="text/javascript" src="d3.js"></script>
+  </head>
+  <body class="align-center bg-light">
+    <div class="container-fluid m-4 shadow p-4 w-75">
+      <h5 class="text-muted mb-4">Enter Your Query</h5>
+      <input
+        class="form-control mb-3"
+        placeholder="Cypher query"
+        id="queryContainer" />
+      <button class="btn btn-secondary" onclick="submitQuery()">Run</button>
+    </div>
+    <div class="container-fluid m-0">
+      <div class="row">
+        <div class="col border border-3">
+          <!-- the canvas element where the graph is drawn -->
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
