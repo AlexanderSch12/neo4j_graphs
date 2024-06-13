@@ -1,12 +1,12 @@
 const neo4jUsername = "neo4j";
-const neo4jPassword = "H65pgY82QWVEOeVZE9oEevsZ-QwCU1_Vhh-4R8EqROY";
+const neo4jPassword = "neo4j_password";
 
 var driver = neo4j.driver(
-  "neo4j://375f5cae.databases.neo4j.io",
+  "neo4j://localhost",
   neo4j.auth.basic(neo4jUsername, neo4jPassword),
   {
-    encrypted: "ENCRYPTION_ON",
-    trustedCertificates: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
+    // encrypted: "ENCRYPTION_ON",
+    // trustedCertificates: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
   }
 );
 var session = driver.session({ defaultAccessMode: neo4j.session.READ });

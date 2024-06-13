@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  # Neo4j admin container for managing Neo4j DBMS
+  # https://neo4j.com/docs/operations-manual/current/tools/neo4j-admin/
+  neo4j-admin:
+    image: neo4j/neo4j-admin:latest
+    pull_policy: if_not_present
+    container_name: neo4j-admin
+  # Actual Neo4j DB container
+  neo4j:
+    image: neo4j:latest
+    pull_policy: if_not_present
+    restart: always
+    container_name: neo4j
+    ports:
+      - 7474:7474
+      - 7687:7687
+    environment:
+      - NEO4J_AUTH=${USER_AUTH}/${PASS_AUTH}
+    volumes:
+      - ./conf:/conf
+      - ./data:/data
+      - ./logs:/logs
+# Pull images: docker-compose pull
+
+# Start up: docker-compose up neo4j (neo4j-admin) (-d)
+# optional: (-d) detache
