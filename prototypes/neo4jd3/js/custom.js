@@ -1,16 +1,30 @@
+/* 
+ Maps that track the current nodes and relationships
+ Ideally the Neo4jD3 library should (and does partially) support this
+ For now it is also done here
+ Take a look at "function updateNodes(n)" in the Neo4jD3 library
+*/
 var nodes_map = new Map([]);
 var relationships_map = new Map([]);
 
+/*
+ Function that makes a connection to the Neo4j database
+ This function should happen in the "middleware" or backend
+*/
 async function init_driver() {
   const neo4jUsername = "neo4j";
   const neo4jPassword = "neo4j_password";
 
-  // Connect to database
   try {
     driver = neo4j.driver(
       "neo4j://localhost",
       neo4j.auth.basic(neo4jUsername, neo4jPassword),
       {
+        /*
+        This should be uncommented when https is supported:
+          - Installed SSL certificates
+          - Enabled in neo4j.conf
+        */
         // encrypted: "ENCRYPTION_ON",
         // trustedCertificates: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
       }
@@ -24,10 +38,21 @@ async function init_driver() {
   }
 }
 
+/*
+ Extracts and parses data comming directly from the Neo4j database
+ This part makes up for the out dated data parsing of the Neo4jD3 library
+ Ideally this should be implemented in the library itself
+ The returned data only contains nodes an rels not present in the current graph
+*/
 function extract_data(records) {
   var new_nodes = [];
   var new_relationships = [];
 
+  /*
+   Parsing of the data always assumes a "p" is returned, meaning p = (NodeA) -Rel-> (NodeB)
+   If a node/rel is not present in the graph the node/rel is refactored to a new node/rel object
+   The data-object is returned containing only new nodes and rels. This seems to be the only way no duplictes are created using "updateWithNeo4jData(data)"
+  */
   records.forEach((record) => {
     p = record.get("p");
 
@@ -83,6 +108,11 @@ function extract_data(records) {
   return data;
 }
 
+/*
+ Execute a query with optional parameters
+ The driver should be global
+ Function should also move to the backend
+*/
 async function execute_query(query, params) {
   driver = await init_driver();
 
@@ -92,6 +122,9 @@ async function execute_query(query, params) {
   return extract_data(records);
 }
 
+/*
+ Function that exstract a cypher query out of the GET-parameters
+*/
 function get_params() {
   const raw_cypher = window.location.search.split("CYPHER=")[1];
   if (raw_cypher) {
@@ -100,23 +133,36 @@ function get_params() {
   return;
 }
 
+/*
+ Opens a new tab with a specific cypher query
+*/
 function open_new_tab(cypher) {
   var url = window.location.href;
   url = url + "?CYPHER=" + cypher;
   window.open(url, "_blank");
 }
 
+/*
+ Start up function of the webpage
+*/
 async function init_page() {
-  // Create some nodes
-
+  /* 
+   Try to extract a cypher query out of the GET-params
+   If no cypher query is present, a default one is used
+  */
   var cypher = get_params();
-
   if (!cypher) {
     cypher = "MATCH p = (sn:Movie)-[r]->(en) RETURN p LIMIT 25;";
   }
 
+  /*
+   Execute the query
+  */
   const data = await execute_query(cypher);
 
+  /*
+   Define the Neo4jD3 library config
+  */
   neo4jd3 = new Neo4jD3("#neo4jd3", {
     highlight: [
       //   {
@@ -134,6 +180,10 @@ async function init_page() {
     neo4jData: data,
     minCollision: 60,
     nodeRadius: 25,
+    /*
+     When double clicked on a node, a query fetches 5 random nodes attached to the clicked node
+     If the graph (number of nodes in the map) has more or equal then 35 nodes a nex tab is opened with the center node being the clicked node
+    */
     onNodeDoubleClick: async function (node) {
       params = { id: node.id };
       const cypher =
@@ -148,6 +198,10 @@ async function init_page() {
         neo4jd3.updateWithNeo4jData(data);
       }
     },
+    /*
+     You can also define a single click function
+     Does nothing at the moment
+    */
     onNodeClick: function (node) {},
     zoomFit: true,
   });
