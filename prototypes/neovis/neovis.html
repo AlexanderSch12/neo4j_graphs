@@ -59,9 +59,26 @@
             Movie: {
               label: "title",
             },
+            Genre: {
+              label: "name",
+              [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+                static: {
+                  color: "#D0EB06",
+                  opacity: 0.9,
+                },
+              },
+            },
           },
           relationships: {
             ACTED_IN: {
+              [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+                static: {
+                  color: "#000000",
+                  opacity: 0.9,
+                },
+              },
+            },
+            IN_GENRE: {
               [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
                 static: {
                   color: "#000000",
@@ -108,18 +125,20 @@
         viz.registerOnEvent("completed", (e) => {
           viz.network.on("selectNode", (event) => {
             const neo4jUsername = "neo4j";
-            const neo4jPassword = "H65pgY82QWVEOeVZE9oEevsZ-QwCU1_Vhh-4R8EqROY";
+            const neo4jPassword = "neo4j_password";
             var driver = neo4j.driver(
-              "neo4j://375f5cae.databases.neo4j.io",
+              "neo4j://localhost",
               neo4j.auth.basic(neo4jUsername, neo4jPassword),
               {
-                encrypted: "ENCRYPTION_ON",
-                trustedCertificates: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
+                // encrypted: "ENCRYPTION_ON",
+                // trustedCertificates: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
               }
             );
             var nodeId = event.nodes[0];
             let query =
-              " MATCH p1=(n)-[r]->(m) WHERE id(n) = " + nodeId + " RETURN p1";
+              "MATCH p1=(n)-[r]->(m) WHERE elementId(m) = " +
+              nodeId +
+              " RETURN p1 LIMIT 5";
             // viz.renderWithCypher(init);
             console.log(event.nodes[0]);
 
@@ -130,7 +149,6 @@
               const node = {};
               const label = neonode.labels[0];
               node.id = parseInt(neonode.identity);
-              console.log(neonode);
               node.raw = neonode;
               node.group = label;
               return node;
